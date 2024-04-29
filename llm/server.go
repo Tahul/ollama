@@ -590,6 +590,8 @@ func (s *llmServer) Completion(ctx context.Context, req CompletionRequest, fn fu
 		"cache_prompt":      true,
 	}
 
+	print(request)
+
 	// Make sure the server is ready
 	status, err := s.getServerStatus(ctx)
 	if err != nil {
@@ -604,12 +606,6 @@ func (s *llmServer) Completion(ctx context.Context, req CompletionRequest, fn fu
 			slog.Warn("Prompt does not specify that the LLM should response in JSON, but JSON format is expected. For best results specify that JSON is expected in the system prompt.")
 		}
 	}
-
-	if req.Options.Grammar != "" {
-		request["grammar"] = req.Options.Grammar
-	}
-
-	
 
 	retryDelay := 100 * time.Microsecond
 	for retries := 0; retries < maxRetries; retries++ {
