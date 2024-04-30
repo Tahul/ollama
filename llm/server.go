@@ -491,24 +491,31 @@ func (s *llmServer) WaitUntilRunning(ctx context.Context) error {
 }
 
 const jsonGrammar = `
-root   ::= value
-value  ::= object | array | string | number | ("true" | "false" | "null")
+root   ::= object
+value  ::= object | array | string | number | ("true" | "false" | "null") ws
+
 object ::=
-  "{" (
-            string ":" value
-    ("," string ":" value)*
-  )? "}"
+  "{" ws (
+            string ":" ws value
+    ("," ws string ":" ws value)*
+  )? "}" ws
+
 array  ::=
-  "[" (
+  "[" ws (
             value
-    ("," value)*
-  )? "]"
+    ("," ws value)*
+  )? "]" ws
+
 string ::=
   "\"" (
-    [^"\\\x7F\x00-\x1F] |
+    [^"\\] |
     "\\" (["\\/bfnrt] | "u" [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F]) # escapes
-  )* "\""
-number ::= ("-"? ([0-9] | [1-9] [0-9]*)) ("." [0-9]+)? ([eE] [-+]? [0-9]+)?
+  )* "\"" ws
+
+number ::= ("-"? ([0-9] | [1-9] [0-9]*)) ("." [0-9]+)? ([eE] [-+]? [0-9]+)? ws
+
+# Optional space: by convention, applied in this grammar after literal chars when allowed
+ws ::= ([ \t\n] ws)?
 `
 
 const maxBufferSize = 512 * format.KiloByte
@@ -581,16 +588,12 @@ func (s *llmServer) Completion(ctx context.Context, req CompletionRequest, fn fu
 		"mirostat":          req.Options.Mirostat,
 		"mirostat_tau":      req.Options.MirostatTau,
 		"mirostat_eta":      req.Options.MirostatEta,
-		"grammar":           req.Options.Grammar,
-		"json_schema":       req.Options.JsonSchema,
 		"penalize_nl":       req.Options.PenalizeNewline,
 		"seed":              req.Options.Seed,
 		"stop":              req.Options.Stop,
 		"image_data":        req.Images,
 		"cache_prompt":      true,
 	}
-
-	print(request)
 
 	// Make sure the server is ready
 	status, err := s.getServerStatus(ctx)
@@ -605,6 +608,10 @@ func (s *llmServer) Completion(ctx context.Context, req CompletionRequest, fn fu
 		if !strings.Contains(strings.ToLower(req.Prompt), "json") {
 			slog.Warn("Prompt does not specify that the LLM should response in JSON, but JSON format is expected. For best results specify that JSON is expected in the system prompt.")
 		}
+	}
+
+	if req.Grammar != "" {
+		request["grammar"] = req.Grammar
 	}
 
 	retryDelay := 100 * time.Microsecond

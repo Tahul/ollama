@@ -45,6 +45,9 @@ type GenerateRequest struct {
 	// Prompt is the textual prompt to send to the model.
 	Prompt string `json:"prompt"`
 
+	// Prompt is the textual grammar to send to the model.
+	Grammar string `json:"grammar"`
+
 	// System overrides the model's default system message/prompt.
 	System string `json:"system"`
 
@@ -132,8 +135,6 @@ type Options struct {
 	Mirostat         int      `json:"mirostat,omitempty"`
 	MirostatTau      float32  `json:"mirostat_tau,omitempty"`
 	MirostatEta      float32  `json:"mirostat_eta,omitempty"`
-	Grammar          string   `json:"grammar,omitempty"`
-	JsonSchema       string   `json:"json_schema,omitempty"`
 	PenalizeNewline  bool     `json:"penalize_newline,omitempty"`
 	Stop             []string `json:"stop,omitempty"`
 }
